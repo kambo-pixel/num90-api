@@ -1,5 +1,5 @@
 import express from "express";
-import axios from "axios";
+import puppeteer from "puppeteer";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -12,21 +12,41 @@ app.get("/resultats", async (req, res) => {
 
   try {
 
-    const response = await axios.get(
-      "https://lotobonheur.ci/wp-json/wp/v2/posts"
-    );
+    const browser = await puppeteer.launch({
+      args: ["--no-sandbox"]
+    });
 
-    const data = response.data;
+    const page = await browser.newPage();
+
+    await page.goto("https://lotobonheur.ci/resultats", {
+      waitUntil: "networkidle2"
+    });
+
+    const numeros = await page.evaluate(() => {
+
+      const resultats = [];
+
+      document.querySelectorAll("li").forEach(el => {
+        const n = parseInt(el.innerText);
+        if(!isNaN(n)) resultats.push(n);
+      });
+
+      return resultats;
+
+    });
+
+    await browser.close();
 
     res.json({
       source: "lotobonheur.ci",
-      data: data[0]
+      tirage: numeros
     });
 
   } catch (error) {
 
     res.json({
-      erreur: "Impossible de récupérer les résultats"
+      erreur: "Scraper impossible",
+      details: error.message
     });
 
   }
@@ -34,5 +54,5 @@ app.get("/resultats", async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log("Serveur lancé sur le port " + PORT);
+  console.log("Serveur lancé");
 });
