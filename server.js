@@ -1,6 +1,5 @@
 import express from "express";
 import axios from "axios";
-import cheerio from "cheerio";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -10,29 +9,18 @@ app.get("/", (req, res) => {
 });
 
 app.get("/resultats", async (req, res) => {
+
   try {
 
-    const url = "https://lotobonheur.ci/resultats";
+    const response = await axios.get(
+      "https://lotobonheur.ci/wp-json/wp/v2/posts"
+    );
 
-    const response = await axios.get(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0"
-      }
-    });
-
-    const html = response.data;
-    const $ = cheerio.load(html);
-
-    let numeros = [];
-
-    $(".ball, .number, .result").each((i, el) => {
-      const num = $(el).text().trim();
-      if (num) numeros.push(num);
-    });
+    const data = response.data;
 
     res.json({
-      source: url,
-      tirage: numeros
+      source: "lotobonheur.ci",
+      data: data[0]
     });
 
   } catch (error) {
@@ -42,6 +30,7 @@ app.get("/resultats", async (req, res) => {
     });
 
   }
+
 });
 
 app.listen(PORT, () => {
