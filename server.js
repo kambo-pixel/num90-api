@@ -5,88 +5,100 @@ import * as cheerio from "cheerio";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-let journal = [];
+let resultats = [];
 
-async function recupererResultats() {
+const tirages = [
 
-  try {
+"Digital réveil 7h",
+"Digital réveil 8h",
+"réveil 10h",
+"étoile 13h",
+"Akwaba 16h",
+"Afterwork 19h",
+"Digital 21h",
+"Digital 22h",
+"Digital 23h"
 
-    const response = await axios.get(
-      "https://lotobonheur.ci/resultats",
-      {
-        headers: {
-          "User-Agent": "Mozilla/5.0",
-          "Accept": "text/html"
-        }
-      }
-    );
+];
 
-    const $ = cheerio.load(response.data);
+async function scraper() {
 
-    const texte = $("body").text();
+try {
 
-    const nombres = texte.match(/\b\d{1,2}\b/g);
+const response = await axios.get(
+"https://lotobonheur.ci/resultats",
+{
+headers:{
+"User-Agent":"Mozilla/5.0"
+}
+}
+);
 
-    if(!nombres) return;
+const $ = cheerio.load(response.data);
 
-    let nouveaux = [];
+let nouveaux = [];
 
-    for(let i=0;i<nombres.length;i+=10){
+$(".result, .tirage, .card").each((i,el)=>{
 
-      const bloc = nombres.slice(i,i+10);
+let texte = $(el).text();
 
-      if(bloc.length === 10){
+let nums = texte.match(/\b\d{1,2}\b/g);
 
-        nouveaux.push({
+if(nums && nums.length >=10){
 
-          gagnants: bloc.slice(0,5),
+let gagnants = nums.slice(0,5);
+let machine = nums.slice(5,10);
 
-          machine: bloc.slice(5,10),
+nouveaux.push({
 
-          date: new Date().toISOString()
+tirage: tirages[i] || "Tirage",
+gagnants: gagnants,
+machine: machine,
+date: new Date().toISOString()
 
-        });
-
-      }
-
-    }
-
-    if(nouveaux.length>0){
-
-      journal = nouveaux;
-
-      console.log("Résultats mis à jour :",journal.length);
-
-    }
-
-  } catch(e) {
-
-    console.log("Erreur :",e.message);
-
-  }
+});
 
 }
 
-recupererResultats();
+});
 
-setInterval(recupererResultats,300000);
+if(nouveaux.length>0){
+
+resultats = nouveaux;
+
+console.log("Mise à jour :",nouveaux.length,"tirages");
+
+}
+
+}
+catch(e){
+
+console.log("Erreur scraping :",e.message);
+
+}
+
+}
+
+scraper();
+
+setInterval(scraper,300000);
 
 app.get("/",(req,res)=>{
 
-  res.json({
-    status:"NUM90 API active"
-  });
+res.json({
+status:"API NUM90 active"
+});
 
 });
 
 app.get("/resultats",(req,res)=>{
 
-  res.json(journal);
+res.json(resultats);
 
 });
 
 app.listen(PORT,()=>{
 
-  console.log("Serveur lancé sur "+PORT);
+console.log("Serveur lancé sur",PORT);
 
 });
