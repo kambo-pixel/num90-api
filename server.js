@@ -5,53 +5,149 @@ import * as cheerio from "cheerio";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.get("/", (req, res) => {
-  res.send("NUM90 API fonctionne");
+let journal = [];
+
+const tiragesAutorises = [
+
+"Digital réveil 7h",
+"Digital réveil 8h",
+"Réveil 10h",
+"Etoile 13h",
+"Akwaba 16h",
+"Afterwork 19h",
+"Digital 21h",
+"Digital 22h",
+"Digital 23h",
+
+"Le matinal 10h",
+"Emergence 13h",
+"Sika 16h",
+
+"Première heure 10h",
+"Fortune 13h",
+"Baraka 16h",
+
+"Kado 10h",
+"Privilège 13h",
+"Monni 16h",
+
+"Cash 10h",
+"Solution 13h",
+"Wari 16h",
+"Day off 20h",
+
+"Spécial week-end 1h",
+"Spécial week-end 3h",
+
+"Soutra 10h",
+"Diamant 13h",
+"Moaye 16h",
+
+"Bénédiction 10h",
+"Prestige 13h",
+"Awale 16h",
+"Espoir 19h"
+
+];
+
+async function recupererResultats(){
+
+try{
+
+const response = await axios.get(
+"https://lotobonheur.ci/resultats",
+{
+headers:{
+"User-Agent":"Mozilla/5.0",
+"Accept":"text/html"
+}
+}
+);
+
+const $ = cheerio.load(response.data);
+
+let nouveauxResultats = [];
+
+$("div").each((i,el)=>{
+
+const texte = $(el).text().trim();
+
+tiragesAutorises.forEach(nom =>{
+
+if(texte.includes(nom)){
+
+const nombres = texte.match(/\b\d{1,2}\b/g);
+
+if(nombres && nombres.length >= 10){
+
+const gagnants = nombres.slice(0,5);
+const machine = nombres.slice(5,10);
+
+nouveauxResultats.push({
+
+tirage: nom,
+gagnants: gagnants,
+machine: machine,
+date: new Date().toISOString()
+
 });
 
-app.get("/resultats", async (req, res) => {
+}
 
-  try {
-
-    const response = await axios.get(
-      "https://lotobonheur.ci/resultats",
-      {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
-          "Accept":
-            "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-          "Accept-Language": "fr-FR,fr;q=0.9",
-          "Connection": "keep-alive"
-        }
-      }
-    );
-
-    const html = response.data;
-
-    const $ = cheerio.load(html);
-
-    const texte = $("body").text();
-
-    const numeros = texte.match(/\b\d{1,2}\b/g);
-
-    res.json({
-      source: "lotobonheur",
-      total: numeros ? numeros.length : 0,
-      tirage: numeros || []
-    });
-
-  } catch (error) {
-
-    res.json({
-      erreur: "Impossible de récupérer les résultats",
-      message: error.message
-    });
-
-  }
+}
 
 });
 
-app.listen(PORT, () => {
-  console.log("Serveur lancé sur le port " + PORT);
+});
+
+if(nouveauxResultats.length > 0){
+
+journal = nouveauxResultats;
+
+console.log("Nouveaux résultats récupérés");
+
+}
+
+}catch(error){
+
+console.log("Erreur récupération :",error.message);
+
+}
+
+}
+
+setInterval(recupererResultats,300000);
+
+app.get("/",(req,res)=>{
+
+res.json({
+status:"API NUM90 active"
+});
+
+});
+
+app.get("/resultats",(req,res)=>{
+
+res.json(journal);
+
+});
+
+app.get("/dernier",(req,res)=>{
+
+if(journal.length > 0){
+
+res.json(journal[0]);
+
+}else{
+
+res.json({message:"Aucun tirage"});
+
+}
+
+});
+
+app.listen(PORT,()=>{
+
+console.log("Serveur lancé sur le port "+PORT);
+
 });
