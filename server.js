@@ -7,147 +7,86 @@ const PORT = process.env.PORT || 3000;
 
 let journal = [];
 
-const tiragesAutorises = [
+async function recupererResultats() {
 
-"Digital réveil 7h",
-"Digital réveil 8h",
-"Réveil 10h",
-"Etoile 13h",
-"Akwaba 16h",
-"Afterwork 19h",
-"Digital 21h",
-"Digital 22h",
-"Digital 23h",
+  try {
 
-"Le matinal 10h",
-"Emergence 13h",
-"Sika 16h",
+    const response = await axios.get(
+      "https://lotobonheur.ci/resultats",
+      {
+        headers: {
+          "User-Agent": "Mozilla/5.0",
+          "Accept": "text/html"
+        }
+      }
+    );
 
-"Première heure 10h",
-"Fortune 13h",
-"Baraka 16h",
+    const $ = cheerio.load(response.data);
 
-"Kado 10h",
-"Privilège 13h",
-"Monni 16h",
+    const texte = $("body").text();
 
-"Cash 10h",
-"Solution 13h",
-"Wari 16h",
-"Day off 20h",
+    const nombres = texte.match(/\b\d{1,2}\b/g);
 
-"Spécial week-end 1h",
-"Spécial week-end 3h",
+    if(!nombres) return;
 
-"Soutra 10h",
-"Diamant 13h",
-"Moaye 16h",
+    let nouveaux = [];
 
-"Bénédiction 10h",
-"Prestige 13h",
-"Awale 16h",
-"Espoir 19h"
+    for(let i=0;i<nombres.length;i+=10){
 
-];
+      const bloc = nombres.slice(i,i+10);
 
-async function recupererResultats(){
+      if(bloc.length === 10){
 
-try{
+        nouveaux.push({
 
-const response = await axios.get(
-"https://lotobonheur.ci/resultats",
-{
-headers:{
-"User-Agent":"Mozilla/5.0",
-"Accept":"text/html"
-}
-}
-);
+          gagnants: bloc.slice(0,5),
 
-const $ = cheerio.load(response.data);
+          machine: bloc.slice(5,10),
 
-let nouveauxResultats = [];
+          date: new Date().toISOString()
 
-$("div").each((i,el)=>{
+        });
 
-const texte = $(el).text().trim();
+      }
 
-tiragesAutorises.forEach(nom =>{
+    }
 
-if(texte.includes(nom)){
+    if(nouveaux.length>0){
 
-const nombres = texte.match(/\b\d{1,2}\b/g);
+      journal = nouveaux;
 
-if(nombres && nombres.length >= 10){
+      console.log("Résultats mis à jour :",journal.length);
 
-const gagnants = nombres.slice(0,5);
-const machine = nombres.slice(5,10);
+    }
 
-nouveauxResultats.push({
+  } catch(e) {
 
-tirage: nom,
-gagnants: gagnants,
-machine: machine,
-date: new Date().toISOString()
+    console.log("Erreur :",e.message);
 
-});
+  }
 
 }
 
-}
-
-});
-
-});
-
-if(nouveauxResultats.length > 0){
-
-journal = nouveauxResultats;
-
-console.log("Nouveaux résultats récupérés");
-
-}
-
-}catch(error){
-
-console.log("Erreur récupération :",error.message);
-
-}
-
-}
+recupererResultats();
 
 setInterval(recupererResultats,300000);
 
 app.get("/",(req,res)=>{
 
-res.json({
-status:"API NUM90 active"
-});
+  res.json({
+    status:"NUM90 API active"
+  });
 
 });
 
 app.get("/resultats",(req,res)=>{
 
-res.json(journal);
-
-});
-
-app.get("/dernier",(req,res)=>{
-
-if(journal.length > 0){
-
-res.json(journal[0]);
-
-}else{
-
-res.json({message:"Aucun tirage"});
-
-}
+  res.json(journal);
 
 });
 
 app.listen(PORT,()=>{
 
-console.log("Serveur lancé sur le port "+PORT);
+  console.log("Serveur lancé sur "+PORT);
 
 });
