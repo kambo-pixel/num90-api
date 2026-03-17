@@ -1,32 +1,17 @@
 import express from "express";
 import axios from "axios";
-import * as cheerio from "cheerio";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-let resultats = [];
-
-const tirages = [
-
-"Digital réveil 7h",
-"Digital réveil 8h",
-"réveil 10h",
-"étoile 13h",
-"Akwaba 16h",
-"Afterwork 19h",
-"Digital 21h",
-"Digital 22h",
-"Digital 23h"
-
-];
+let journal = [];
 
 async function scraper() {
 
 try {
 
 const response = await axios.get(
-"https://lotobonheur.ci/resultats",
+"https://lotobonheur.ci",
 {
 headers:{
 "User-Agent":"Mozilla/5.0"
@@ -34,46 +19,43 @@ headers:{
 }
 );
 
-const $ = cheerio.load(response.data);
+const html = response.data;
 
-let nouveaux = [];
+const nombres = html.match(/\b\d{1,2}\b/g);
 
-$(".result, .tirage, .card").each((i,el)=>{
+if(!nombres) return;
 
-let texte = $(el).text();
+let tirages = [];
 
-let nums = texte.match(/\b\d{1,2}\b/g);
+for(let i=0;i<nombres.length;i++){
 
-if(nums && nums.length >=10){
+let bloc = nombres.slice(i,i+10);
 
-let gagnants = nums.slice(0,5);
-let machine = nums.slice(5,10);
+if(bloc.length===10){
 
-nouveaux.push({
+tirages.push({
 
-tirage: tirages[i] || "Tirage",
-gagnants: gagnants,
-machine: machine,
-date: new Date().toISOString()
+gagnants: bloc.slice(0,5),
+machine: bloc.slice(5,10)
 
 });
 
 }
 
-});
+}
 
-if(nouveaux.length>0){
+if(tirages.length>0){
 
-resultats = nouveaux;
+journal = tirages.slice(0,20);
 
-console.log("Mise à jour :",nouveaux.length,"tirages");
+console.log("Tirages trouvés :",journal.length);
 
 }
 
 }
 catch(e){
 
-console.log("Erreur scraping :",e.message);
+console.log("Erreur :",e.message);
 
 }
 
@@ -86,19 +68,19 @@ setInterval(scraper,300000);
 app.get("/",(req,res)=>{
 
 res.json({
-status:"API NUM90 active"
+status:"API active"
 });
 
 });
 
 app.get("/resultats",(req,res)=>{
 
-res.json(resultats);
+res.json(journal);
 
 });
 
 app.listen(PORT,()=>{
 
-console.log("Serveur lancé sur",PORT);
+console.log("Serveur lancé");
 
 });
