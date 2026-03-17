@@ -3,41 +3,69 @@ import express from "express";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// 🔥 COLLE ICI TON JSON (IMPORTANT)
-let sourceData = {
-  "source": "lotobonheur",
-  "total": 1574,
-  "tirage": [/* colle ton tableau ici */]
-};
+// 🔥 COLLE ICI TON TEXTE COMPLET
+let rawText = `COLLE ICI TON TEXTE EXACT`;
 
-// 🔁 fonction de transformation
-function organiser() {
-  let resultats = [];
+// 🔁 parser
+function parser() {
+  const lignes = rawText
+    .split("\n")
+    .map(l => l.trim())
+    .filter(l => l);
 
-  for (let i = 0; i < sourceData.tirage.length; i += 10) {
+  let data = [];
+  let currentDate = "";
+  let currentTirage = null;
 
-    let gagnants = sourceData.tirage.slice(i, i + 5);
-    let machine = sourceData.tirage.slice(i + 5, i + 10);
+  for (let i = 0; i < lignes.length; i++) {
 
-    if (gagnants.length === 5 && machine.length === 5) {
-      resultats.push({
-        tirage: `Tirage ${i / 10 + 1}`,
-        gagnants,
-        machine
-      });
+    let l = lignes[i];
+
+    // 📅 détecter date
+    if (l.match(/^(Lundi|Mardi|Mercredi|Jeudi|Vendredi|Samedi|Dimanche)/)) {
+      currentDate = l;
+    }
+
+    // 🎯 détecter tirage
+    else if (
+      l.length < 40 &&
+      !l.includes("Gagnants") &&
+      !l.includes("Machine") &&
+      isNaN(l)
+    ) {
+      currentTirage = {
+        date: currentDate,
+        tirage: l,
+        gagnants: [],
+        machine: []
+      };
+    }
+
+    // 🎯 gagnants
+    else if (l === "##### Gagnants :" || l === "Gagnants") {
+      currentTirage.gagnants = lignes.slice(i + 1, i + 6).map(Number);
+    }
+
+    // 🎯 machine
+    else if (l === "##### Machine :" || l === "Machine") {
+      currentTirage.machine = lignes.slice(i + 1, i + 6).map(Number);
+
+      if (currentTirage.gagnants.length === 5) {
+        data.push(currentTirage);
+      }
     }
   }
 
-  return resultats;
+  return data;
 }
 
 // ROUTES
 app.get("/", (req, res) => {
-  res.json({ status: "API OK" });
+  res.json({ status: "OK" });
 });
 
 app.get("/resultats", (req, res) => {
-  res.json(organiser());
+  res.json(parser());
 });
 
 app.listen(PORT, () => {
