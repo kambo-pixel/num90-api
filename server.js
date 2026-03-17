@@ -4,50 +4,74 @@ import axios from "axios";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// 🔥 TON API (celle que tu as trouvée)
+const API_URL = "https://api.onrender.com/lotobonheur"; // ← remplace par ton vrai lien
+
 let journal = [];
 
-// 🔥 URL API (à ajuster si besoin)
-const API_URL = "https://lotobonheur.ci/api/results";
-
+// 🔥 fonction principale
 async function fetchResults() {
   try {
 
-    const res = await axios.get(API_URL, {
-      headers: {
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "application/json"
-      }
+    const response = await axios.get(API_URL);
+    const data = response.data;
+
+    if (!data.success) {
+      console.log("❌ API pas valide");
+      return;
+    }
+
+    let results = [];
+
+    data.drawsResultsWeekly.forEach(week => {
+
+      week.drawResultsDaily.forEach(day => {
+
+        const date = day.date;
+
+        // 🔥 fusion night + standard
+        const allDraws = [
+          ...day.drawResults.nightDraws,
+          ...day.drawResults.standardDraws
+        ];
+
+        allDraws.forEach(draw => {
+
+          // ❌ ignorer les vides
+          if (draw.drawName === "-" || draw.winningNumbers.includes(".")) return;
+
+          results.push({
+            date: date,
+            tirage: draw.drawName,
+            gagnants: draw.winningNumbers.split(" - "),
+            machine: draw.machineNumbers.split(" - ")
+          });
+
+        });
+
+      });
+
     });
 
-    const data = res.data;
+    // 🔥 tri chronologique (du plus récent au plus ancien)
+    results.reverse();
 
-    if (!data) return;
+    journal = results;
 
-    // 🔥 FORMATAGE PROPRE
-    const formatted = data.map(item => ({
-      tirage: item.name || item.tirage,
-      heure: item.time || item.heure,
-      gagnants: item.winners || item.gagnants,
-      machine: item.machine || item.machine_numbers,
-      date: item.date || new Date().toISOString()
-    }));
+    console.log("✅ Résultats chargés :", journal.length);
 
-    journal = formatted;
-
-    console.log("✅ API OK :", journal.length);
-
-  } catch (e) {
-    console.log("❌ API erreur :", e.message);
+  } catch (error) {
+    console.log("❌ Erreur API :", error.message);
   }
 }
 
-// 🔁 toutes les 5 minutes
+// 🔁 mise à jour toutes les 5 min
 fetchResults();
 setInterval(fetchResults, 300000);
 
 // ROUTES
 app.get("/", (req, res) => {
-  res.json({ status: "API NUM90 active" });
+  res.json({ status: "OK API NUM90" });
 });
 
 app.get("/resultats", (req, res) => {
@@ -55,5 +79,5 @@ app.get("/resultats", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log("🚀 Serveur lancé");
+  console.log("🚀 Serveur démarré sur port", PORT);
 });
