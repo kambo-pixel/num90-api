@@ -10,22 +10,36 @@ async function scraper() {
   try {
 
     const browser = await puppeteer.launch({
+      headless: "new",
       args: ["--no-sandbox", "--disable-setuid-sandbox"]
     });
 
     const page = await browser.newPage();
 
     await page.goto("https://lotobonheur.ci", {
-      waitUntil: "networkidle2",
+      waitUntil: "domcontentloaded",
       timeout: 0
     });
 
-    // 🔥 On récupère tout le texte visible
+    // 🔥 ON ATTEND QUE LES DONNÉES APPARAISSENT
+    await page.waitForSelector("body", { timeout: 10000 });
+
+    // 🔥 ATTENTE SUPPLÉMENTAIRE (TRÈS IMPORTANT)
+    await new Promise(r => setTimeout(r, 5000));
+
     const content = await page.evaluate(() => document.body.innerText);
 
     await browser.close();
 
-    const lignes = content.split("\n").map(l => l.trim()).filter(l => l);
+    if (!content) {
+      console.log("⚠️ contenu vide");
+      return;
+    }
+
+    const lignes = content
+      .split("\n")
+      .map(l => l.trim())
+      .filter(l => l);
 
     let data = [];
     let current = null;
@@ -34,7 +48,7 @@ async function scraper() {
 
       let ligne = lignes[i];
 
-      // 🎯 détecter nom du tirage
+      // 🎯 NOM TIRAGE
       if (
         ligne.length < 40 &&
         !ligne.includes("Gagnants") &&
@@ -57,7 +71,10 @@ async function scraper() {
       if (ligne === "Machine") {
         current.machine = lignes.slice(i + 1, i + 6);
 
-        if (current.gagnants.length === 5 && current.machine.length === 5) {
+        if (
+          current.gagnants.length === 5 &&
+          current.machine.length === 5
+        ) {
           data.push(current);
         }
       }
@@ -65,13 +82,13 @@ async function scraper() {
 
     if (data.length > 0) {
       journal = data;
-      console.log("✅ Tirages :", journal.length);
+      console.log("✅ OK :", journal.length);
     } else {
-      console.log("⚠️ Aucun tirage trouvé");
+      console.log("❌ Toujours vide");
     }
 
   } catch (e) {
-    console.log("❌ Erreur :", e.message);
+    console.log("❌ ERREUR :", e.message);
   }
 }
 
