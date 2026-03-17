@@ -1,103 +1,53 @@
 import express from "express";
-import puppeteer from "puppeteer";
+import axios from "axios";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 let journal = [];
 
-async function scraper() {
+// 🔥 URL API (à ajuster si besoin)
+const API_URL = "https://lotobonheur.ci/api/results";
+
+async function fetchResults() {
   try {
 
-    const browser = await puppeteer.launch({
-      headless: "new",
-      args: ["--no-sandbox", "--disable-setuid-sandbox"]
+    const res = await axios.get(API_URL, {
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/json"
+      }
     });
 
-    const page = await browser.newPage();
+    const data = res.data;
 
-    await page.goto("https://lotobonheur.ci", {
-      waitUntil: "domcontentloaded",
-      timeout: 0
-    });
+    if (!data) return;
 
-    // 🔥 ON ATTEND QUE LES DONNÉES APPARAISSENT
-    await page.waitForSelector("body", { timeout: 10000 });
+    // 🔥 FORMATAGE PROPRE
+    const formatted = data.map(item => ({
+      tirage: item.name || item.tirage,
+      heure: item.time || item.heure,
+      gagnants: item.winners || item.gagnants,
+      machine: item.machine || item.machine_numbers,
+      date: item.date || new Date().toISOString()
+    }));
 
-    // 🔥 ATTENTE SUPPLÉMENTAIRE (TRÈS IMPORTANT)
-    await new Promise(r => setTimeout(r, 5000));
+    journal = formatted;
 
-    const content = await page.evaluate(() => document.body.innerText);
-
-    await browser.close();
-
-    if (!content) {
-      console.log("⚠️ contenu vide");
-      return;
-    }
-
-    const lignes = content
-      .split("\n")
-      .map(l => l.trim())
-      .filter(l => l);
-
-    let data = [];
-    let current = null;
-
-    for (let i = 0; i < lignes.length; i++) {
-
-      let ligne = lignes[i];
-
-      // 🎯 NOM TIRAGE
-      if (
-        ligne.length < 40 &&
-        !ligne.includes("Gagnants") &&
-        !ligne.includes("Machine") &&
-        isNaN(ligne)
-      ) {
-        current = {
-          tirage: ligne,
-          gagnants: [],
-          machine: []
-        };
-      }
-
-      // 🎯 GAGNANTS
-      if (ligne === "Gagnants") {
-        current.gagnants = lignes.slice(i + 1, i + 6);
-      }
-
-      // 🎯 MACHINE
-      if (ligne === "Machine") {
-        current.machine = lignes.slice(i + 1, i + 6);
-
-        if (
-          current.gagnants.length === 5 &&
-          current.machine.length === 5
-        ) {
-          data.push(current);
-        }
-      }
-    }
-
-    if (data.length > 0) {
-      journal = data;
-      console.log("✅ OK :", journal.length);
-    } else {
-      console.log("❌ Toujours vide");
-    }
+    console.log("✅ API OK :", journal.length);
 
   } catch (e) {
-    console.log("❌ ERREUR :", e.message);
+    console.log("❌ API erreur :", e.message);
   }
 }
 
-// 🔁 toutes les 5 min
-scraper();
-setInterval(scraper, 300000);
+// 🔁 toutes les 5 minutes
+fetchResults();
+setInterval(fetchResults, 300000);
 
+// ROUTES
 app.get("/", (req, res) => {
-  res.json({ status: "API active" });
+  res.json({ status: "API NUM90 active" });
 });
 
 app.get("/resultats", (req, res) => {
