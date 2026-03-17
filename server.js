@@ -1,5 +1,5 @@
 import express from "express";
-import axios from "axios";
+import puppeteer from "puppeteer";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -9,34 +9,37 @@ let journal = [];
 async function scraper() {
   try {
 
-    const response = await axios.get("https://lotobonheur.ci", {
-      headers: { "User-Agent": "Mozilla/5.0" }
+    const browser = await puppeteer.launch({
+      args: ["--no-sandbox", "--disable-setuid-sandbox"]
     });
 
-    const html = response.data;
+    const page = await browser.newPage();
 
-    // 🔥 Nettoyage du texte
-    const text = html
-      .replace(/\r/g, "")
-      .replace(/\n+/g, "\n");
+    await page.goto("https://lotobonheur.ci", {
+      waitUntil: "networkidle2",
+      timeout: 0
+    });
 
-    const lignes = text.split("\n");
+    // 🔥 On récupère tout le texte visible
+    const content = await page.evaluate(() => document.body.innerText);
+
+    await browser.close();
+
+    const lignes = content.split("\n").map(l => l.trim()).filter(l => l);
 
     let data = [];
     let current = null;
 
     for (let i = 0; i < lignes.length; i++) {
 
-      let ligne = lignes[i].trim();
+      let ligne = lignes[i];
 
-      // 🎯 Détection nom tirage
+      // 🎯 détecter nom du tirage
       if (
-        ligne &&
+        ligne.length < 40 &&
         !ligne.includes("Gagnants") &&
         !ligne.includes("Machine") &&
-        !ligne.includes("#####") &&
-        !ligne.includes("Semaine") &&
-        ligne.length < 30
+        isNaN(ligne)
       ) {
         current = {
           tirage: ligne,
@@ -46,23 +49,15 @@ async function scraper() {
       }
 
       // 🎯 GAGNANTS
-      if (ligne.includes("Gagnants")) {
-        current.gagnants = lignes
-          .slice(i + 1, i + 6)
-          .map(n => n.trim());
+      if (ligne === "Gagnants") {
+        current.gagnants = lignes.slice(i + 1, i + 6);
       }
 
       // 🎯 MACHINE
-      if (ligne.includes("Machine")) {
-        current.machine = lignes
-          .slice(i + 1, i + 6)
-          .map(n => n.trim());
+      if (ligne === "Machine") {
+        current.machine = lignes.slice(i + 1, i + 6);
 
-        // 🔥 VALIDATION
-        if (
-          current.gagnants.length === 5 &&
-          current.machine.length === 5
-        ) {
+        if (current.gagnants.length === 5 && current.machine.length === 5) {
           data.push(current);
         }
       }
@@ -70,7 +65,9 @@ async function scraper() {
 
     if (data.length > 0) {
       journal = data;
-      console.log("✅ Tirages récupérés :", journal.length);
+      console.log("✅ Tirages :", journal.length);
+    } else {
+      console.log("⚠️ Aucun tirage trouvé");
     }
 
   } catch (e) {
