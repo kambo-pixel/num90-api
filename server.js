@@ -21,31 +21,62 @@ function normalize(text) {
 function getHeure(tirage) {
   const t = normalize(tirage);
 
-  if (t.includes("1h")) return 1;
-  if (t.includes("3h")) return 3;
-  if (t.includes("7h")) return 7;
-  if (t.includes("8h")) return 8;
+  const map = {
+    // week-end
+    "special weekend 1h": 1,
+    "special weekend 3h": 3,
 
-  if (t.includes("10") || t.includes("matinal") || t.includes("premiere") || t.includes("kado") || t.includes("cash") || t.includes("soutra") || t.includes("benediction"))
-    return 10;
+    // matin
+    "digital reveil 7h": 7,
+    "digital reveil 8h": 8,
 
-  if (t.includes("13") || t.includes("etoile") || t.includes("emergence") || t.includes("fortune") || t.includes("privilege") || t.includes("solution") || t.includes("diamant") || t.includes("prestige"))
-    return 13;
+    // 10h
+    "reveil": 10,
+    "matinale": 10,
+    "premiere heure": 10,
+    "kado": 10,
+    "cash": 10,
+    "soutra": 10,
+    "benediction": 10,
 
-  if (t.includes("16") || t.includes("akwaba") || t.includes("sika") || t.includes("baraka") || t.includes("monni") || t.includes("wari") || t.includes("moaye") || t.includes("awale"))
-    return 16;
+    // 13h
+    "etoile": 13,
+    "emergence": 13,
+    "fortune": 13,
+    "privilege": 13,
+    "solution": 13,
+    "diamant": 13,
+    "prestige": 13,
 
-  if (t.includes("19") || t.includes("afterwork") || t.includes("espoir"))
-    return 19;
+    // 16h
+    "akwaba": 16,
+    "sika": 16,
+    "baraka": 16,
+    "monni": 16,
+    "wari": 16,
+    "moaye": 16,
+    "awale": 16,
 
-  if (t.includes("20") || t.includes("day off"))
-    return 20;
+    // 19h
+    "afterwork": 19,
+    "espoir": 19,
 
-  if (t.includes("21")) return 21;
-  if (t.includes("22")) return 22;
-  if (t.includes("23")) return 23;
+    // 20h
+    "day off": 20,
 
-  return 99; // fallback sécurité
+    // nuit
+    "digital 21h": 21,
+    "digital 22h": 22,
+    "digital 23h": 23
+  };
+
+  for (let key in map) {
+    if (t.includes(key)) {
+      return map[key];
+    }
+  }
+
+  return 99;
 }
 
 async function fetchResults() {
