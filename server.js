@@ -1,103 +1,62 @@
 import express from "express";
-import puppeteer from "puppeteer";
+import axios from "axios";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 let journal = [];
 
-async function scraper() {
+async function fetchResults() {
   try {
-    console.log("⏳ Scraping en cours...");
+    console.log("⏳ Récupération API...");
 
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"]
-    });
-
-    const page = await browser.newPage();
-
-    // 🔥 simuler vrai navigateur
-    await page.setUserAgent(
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36"
+    const response = await axios.get(
+      "https://lotobonheur.ci/api/results"
     );
 
-    await page.goto("https://lotobonheur.ci/resultats", {
-      waitUntil: "networkidle2",
-      timeout: 0
-    });
+    const data = response.data;
 
-    // 🔥 attendre chargement JS
-    await page.waitForSelector("body");
-    await new Promise(r => setTimeout(r, 8000)); // très important
-
-    // 🔥 récupérer texte
-    const text = await page.evaluate(() => document.body.innerText);
-
-    await browser.close();
-
-    if (!text) {
-      console.log("❌ Texte vide");
+    if (!data.success) {
+      console.log("❌ API erreur");
       return;
     }
 
-    const lignes = text
-      .split("\n")
-      .map(l => l.trim())
-      .filter(l => l);
+    let results = [];
 
-    let data = [];
-    let current = null;
-    let currentDate = "";
+    data.drawsResultsWeekly.forEach(week => {
+      week.drawResultsDaily.forEach(day => {
 
-    for (let i = 0; i < lignes.length; i++) {
-      let l = lignes[i];
+        const date = day.date;
 
-      // 📅 date
-      if (l.match(/(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)/i)) {
-        currentDate = l;
-      }
+        const processDraws = (draws) => {
+          draws.forEach(draw => {
 
-      // 🎯 nom tirage
-      else if (
-        l.length < 40 &&
-        !l.includes("Gagnants") &&
-        !l.includes("Machine") &&
-        isNaN(l)
-      ) {
-        current = {
-          date: currentDate,
-          tirage: l,
-          gagnants: [],
-          machine: []
+            if (draw.drawName === "-" ) return;
+            if (draw.winningNumbers.includes(".")) return;
+
+            results.push({
+              date: date,
+              tirage: draw.drawName,
+              gagnants: draw.winningNumbers.split(" - "),
+              machine: draw.machineNumbers.split(" - ")
+            });
+          });
         };
-      }
 
-      // 🎯 gagnants
-      else if (l === "Gagnants") {
-        current.gagnants = lignes.slice(i + 1, i + 6);
-      }
-
-      // 🎯 machine
-      else if (l === "Machine") {
-        current.machine = lignes.slice(i + 1, i + 6);
-
-        if (
-          current &&
-          current.gagnants.length === 5 &&
-          current.machine.length === 5
-        ) {
-          data.push(current);
+        if (day.drawResults.nightDraws) {
+          processDraws(day.drawResults.nightDraws);
         }
-      }
-    }
 
-    if (data.length > 0) {
-      journal = data;
-      console.log("✅ Résultats :", journal.length);
-    } else {
-      console.log("❌ Aucun résultat trouvé");
-    }
+        if (day.drawResults.standardDraws) {
+          processDraws(day.drawResults.standardDraws);
+        }
+
+      });
+    });
+
+    journal = results;
+
+    console.log("✅ Résultats récupérés :", journal.length);
 
   } catch (err) {
     console.log("❌ ERREUR :", err.message);
@@ -105,8 +64,8 @@ async function scraper() {
 }
 
 // 🔁 toutes les 5 minutes
-scraper();
-setInterval(scraper, 300000);
+fetchResults();
+setInterval(fetchResults, 300000);
 
 // ROUTES
 app.get("/", (req, res) => {
@@ -118,5 +77,5 @@ app.get("/resultats", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log("🚀 Serveur lancé sur port " + PORT);
+  console.log("🚀 Serveur lancé");
 });
