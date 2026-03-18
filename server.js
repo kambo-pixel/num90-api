@@ -4,16 +4,59 @@ import axios from "axios";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-let journal = [];
+let journal = {};
+
+// 🔥 ORDRE PAR JOUR (GLOBAL)
+const ordreParJour = {
+  lundi: [
+    "Digital Reveil 7h","Digital Reveil 8h","Reveil",
+    "Etoile","Akwaba","Afterwork",
+    "Digital 21h","Digital 22h","Digital 23h"
+  ],
+  mardi: [
+    "Digital Reveil 7h","Digital Reveil 8h","La Matinale",
+    "Emergence","Sika","Afterwork",
+    "Digital 21h","Digital 22h","Digital 23h"
+  ],
+  mercredi: [
+    "Digital Reveil 7h","Digital Reveil 8h","Premiere Heure",
+    "Fortune","Baraka","Afterwork",
+    "Digital 21h","Digital 22h","Digital 23h"
+  ],
+  jeudi: [
+    "Digital Reveil 7h","Digital Reveil 8h","Kado",
+    "Privilege","Monni","Afterwork",
+    "Digital 21h","Digital 22h","Digital 23h"
+  ],
+  vendredi: [
+    "Digital Reveil 7h","Digital Reveil 8h","Cash",
+    "Solution","Wari","Afterwork","Day Off",
+    "Digital 21h","Digital 22h","Digital 23h"
+  ],
+  samedi: [
+    "Special Weekend 1h","Special Weekend 3h",
+    "Digital Reveil 7h","Digital Reveil 8h",
+    "Soutra","Diamant","Moaye","Afterwork",
+    "Digital 21h","Digital 22h","Digital 23h"
+  ],
+  dimanche: [
+    "Special Weekend 1h","Special Weekend 3h",
+    "Digital Reveil 7h","Digital Reveil 8h",
+    "Benediction","Prestige","Awale","Espoir",
+    "Digital 21h","Digital 22h","Digital 23h"
+  ]
+};
+
+// 🔥 EXTRAIRE JOUR
+function getJour(dateString) {
+  return dateString.split(" ")[0].toLowerCase();
+}
 
 async function fetchResults() {
   try {
     console.log("⏳ Récupération API...");
 
-    const response = await axios.get(
-      "https://lotobonheur.ci/api/results"
-    );
-
+    const response = await axios.get("https://lotobonheur.ci/api/results");
     const data = response.data;
 
     if (!data.success) {
@@ -21,109 +64,26 @@ async function fetchResults() {
       return;
     }
 
-    let results = [];
-function getJour(dateString) {
-  return dateString.split(" ")[0].toLowerCase();
-}
+    let temp = {};
+
     data.drawsResultsWeekly.forEach(week => {
       week.drawResultsDaily.forEach(day => {
-const ordreParJour = {
-  "lundi": [
-    "Digital Reveil 7h",
-    "Digital Reveil 8h",
-    "Reveil",
-    "Etoile",
-    "Akwaba",
-    "Afterwork",
-    "Digital 21h",
-    "Digital 22h",
-    "Digital 23h"
-  ],
-  "mardi": [
-    "Digital Reveil 7h",
-    "Digital Reveil 8h",
-    "La Matinale",
-    "Emergence",
-    "Sika",
-    "Afterwork",
-    "Digital 21h",
-    "Digital 22h",
-    "Digital 23h"
-  ],
-  "mercredi": [
-    "Digital Reveil 7h",
-    "Digital Reveil 8h",
-    "Premiere Heure",
-    "Fortune",
-    "Baraka",
-    "Afterwork",
-    "Digital 21h",
-    "Digital 22h",
-    "Digital 23h"
-  ],
-  "jeudi": [
-    "Digital Reveil 7h",
-    "Digital Reveil 8h",
-    "Kado",
-    "Privilege",
-    "Monni",
-    "Afterwork",
-    "Digital 21h",
-    "Digital 22h",
-    "Digital 23h"
-  ],
-  "vendredi": [
-    "Digital Reveil 7h",
-    "Digital Reveil 8h",
-    "Cash",
-    "Solution",
-    "Wari",
-    "Afterwork",
-    "Day Off",
-    "Digital 21h",
-    "Digital 22h",
-    "Digital 23h"
-  ],
-  "samedi": [
-    "Special Weekend 1h",
-    "Special Weekend 3h",
-    "Digital Reveil 7h",
-    "Digital Reveil 8h",
-    "Soutra",
-    "Diamant",
-    "Moaye",
-    "Afterwork",
-    "Digital 21h",
-    "Digital 22h",
-    "Digital 23h"
-  ],
-  "dimanche": [
-    "Special Weekend 1h",
-    "Special Weekend 3h",
-    "Digital Reveil 7h",
-    "Digital Reveil 8h",
-    "Benediction",
-    "Prestige",
-    "Awale",
-    "Espoir",
-    "Digital 21h",
-    "Digital 22h",
-    "Digital 23h"
-  ]
-};
-        const date = day.date;
+
+        const jour = getJour(day.date);
+
+        if (!temp[jour]) temp[jour] = [];
 
         const processDraws = (draws) => {
           draws.forEach(draw => {
 
             if (!draw.winningNumbers || !draw.machineNumbers) return;
 
-if (
-  draw.winningNumbers.includes(".") ||
-  draw.machineNumbers.includes(".")
-) return;
-            results.push({
-              date: date,
+            if (
+              draw.winningNumbers.includes(".") ||
+              draw.machineNumbers.includes(".")
+            ) return;
+
+            temp[jour].push({
               tirage: draw.drawName,
               gagnants: draw.winningNumbers.split(" - "),
               machine: draw.machineNumbers.split(" - ")
@@ -131,27 +91,36 @@ if (
           });
         };
 
-        if (day.drawResults.nightDraws) {
-          processDraws(day.drawResults.nightDraws);
-        }
-
         if (day.drawResults.standardDraws) {
           processDraws(day.drawResults.standardDraws);
+        }
+
+        if (day.drawResults.nightDraws) {
+          processDraws(day.drawResults.nightDraws);
         }
 
       });
     });
 
-    journal = results;
+    // 🔥 TRI PAR ORDRE
+    Object.keys(temp).forEach(jour => {
+      const ordre = ordreParJour[jour] || [];
 
-    console.log("✅ Résultats récupérés :", journal.length);
+      temp[jour].sort((a, b) => {
+        return ordre.indexOf(a.tirage) - ordre.indexOf(b.tirage);
+      });
+    });
+
+    journal = temp;
+
+    console.log("✅ OK :", Object.keys(journal).length, "jours");
 
   } catch (err) {
     console.log("❌ ERREUR :", err.message);
   }
 }
 
-// 🔁 toutes les 5 minutes
+// 🔁 AUTO REFRESH
 fetchResults();
 setInterval(fetchResults, 300000);
 
@@ -166,11 +135,4 @@ app.get("/resultats", (req, res) => {
 
 app.listen(PORT, () => {
   console.log("🚀 Serveur lancé");
-});
-Object.keys(resultatsParJour).forEach(jour => {
-  const ordre = ordreParJour[jour] || [];
-
-  resultatsParJour[jour].sort((a, b) => {
-    return ordre.indexOf(a.tirage) - ordre.indexOf(b.tirage);
-  });
 });
