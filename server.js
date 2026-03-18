@@ -64,14 +64,15 @@ async function fetchResults() {
       return;
     }
 
-    let temp = {};
+    let temp = [];
 
     data.drawsResultsWeekly.forEach(week => {
       week.drawResultsDaily.forEach(day => {
 
-        const jour = getJour(day.date);
+        const fullDate = day.date + "/2026"; // 👉 ajoute année
+        const jour = fullDate; // 👉 clé unique (IMPORTANT)
 
-        if (!temp[jour]) temp[jour] = [];
+        let tirages = [];
 
         const processDraws = (draws) => {
           draws.forEach(draw => {
@@ -83,20 +84,11 @@ async function fetchResults() {
               draw.machineNumbers.includes(".")
             ) return;
 
-const newItem = {
-  tirage: draw.drawName,
-  gagnants: draw.winningNumbers.split(" - "),
-  machine: draw.machineNumbers.split(" - ")
-};
-
-// 🔥 supprimer doublons (garder le dernier)
-const index = temp[jour].findIndex(t => t.tirage === draw.drawName);
-
-if (index !== -1) {
-  temp[jour][index] = newItem; // remplace ancien
-} else {
-  temp[jour].push(newItem); // ajoute si pas existant
-}
+            tirages.push({
+              tirage: draw.drawName,
+              gagnants: draw.winningNumbers.split(" - "),
+              machine: draw.machineNumbers.split(" - ")
+            });
           });
         };
 
@@ -108,21 +100,29 @@ if (index !== -1) {
           processDraws(day.drawResults.nightDraws);
         }
 
+        // 🔥 TRI PAR ORDRE
+        const nomJour = day.date.split(" ")[0].toLowerCase();
+        const ordre = ordreParJour[nomJour] || [];
+
+        tirages.sort((a, b) => {
+          return ordre.indexOf(a.tirage) - ordre.indexOf(b.tirage);
+        });
+
+        temp.push({
+          date: fullDate,
+          timestamp: new Date(fullDate.split(" ")[1].split("/").reverse().join("-")).getTime(),
+          tirages: tirages
+        });
+
       });
     });
 
-    // 🔥 TRI PAR ORDRE
-    Object.keys(temp).forEach(jour => {
-      const ordre = ordreParJour[jour] || [];
-
-      temp[jour].sort((a, b) => {
-        return ordre.indexOf(a.tirage) - ordre.indexOf(b.tirage);
-      });
-    });
+    // 🔥 TRI GLOBAL (plus récent en haut)
+    temp.sort((a, b) => b.timestamp - a.timestamp);
 
     journal = temp;
 
-    console.log("✅ OK :", Object.keys(journal).length, "jours");
+    console.log("✅ OK :", journal.length, "jours");
 
   } catch (err) {
     console.log("❌ ERREUR :", err.message);
