@@ -128,7 +128,7 @@ if (index !== -1) {
     console.log("❌ ERREUR :", err.message);
   }
 }
-
+  
 // 🔁 AUTO REFRESH
 fetchResults();
 setInterval(fetchResults, 300000);
