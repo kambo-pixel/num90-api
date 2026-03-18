@@ -9,16 +9,44 @@ const PORT = process.env.PORT || 3000;
 
 let journal = [];
 
-// 🔥 ORDRE PAR JOUR
-const ordreParJour = {
-  lundi: ["Digital Reveil 7h","Digital Reveil 8h","Reveil","Etoile","Akwaba","Afterwork","Digital 21h","Digital 22h","Digital 23h"],
-  mardi: ["Digital Reveil 7h","Digital Reveil 8h","La Matinale","Emergence","Sika","Afterwork","Digital 21h","Digital 22h","Digital 23h"],
-  mercredi: ["Digital Reveil 7h","Digital Reveil 8h","Premiere Heure","Fortune","Baraka","Afterwork","Digital 21h","Digital 22h","Digital 23h"],
-  jeudi: ["Digital Reveil 7h","Digital Reveil 8h","Kado","Privilege","Monni","Afterwork","Digital 21h","Digital 22h","Digital 23h"],
-  vendredi: ["Digital Reveil 7h","Digital Reveil 8h","Cash","Solution","Wari","Afterwork","Day Off","Digital 21h","Digital 22h","Digital 23h"],
-  samedi: ["Special Weekend 1h","Special Weekend 3h","Digital Reveil 7h","Digital Reveil 8h","Soutra","Diamant","Moaye","Afterwork","Digital 21h","Digital 22h","Digital 23h"],
-  dimanche: ["Special Weekend 1h","Special Weekend 3h","Digital Reveil 7h","Digital Reveil 8h","Benediction","Prestige","Awale","Espoir","Digital 21h","Digital 22h","Digital 23h"]
-};
+// 🔥 NORMALISER TEXTE (enlever accents + minuscule)
+function normalize(text) {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+// 🔥 EXTRAIRE HEURE INTELLIGEMMENT
+function getHeure(tirage) {
+  const t = normalize(tirage);
+
+  if (t.includes("1h")) return 1;
+  if (t.includes("3h")) return 3;
+  if (t.includes("7h")) return 7;
+  if (t.includes("8h")) return 8;
+
+  if (t.includes("10") || t.includes("matinal") || t.includes("premiere") || t.includes("kado") || t.includes("cash") || t.includes("soutra") || t.includes("benediction"))
+    return 10;
+
+  if (t.includes("13") || t.includes("etoile") || t.includes("emergence") || t.includes("fortune") || t.includes("privilege") || t.includes("solution") || t.includes("diamant") || t.includes("prestige"))
+    return 13;
+
+  if (t.includes("16") || t.includes("akwaba") || t.includes("sika") || t.includes("baraka") || t.includes("monni") || t.includes("wari") || t.includes("moaye") || t.includes("awale"))
+    return 16;
+
+  if (t.includes("19") || t.includes("afterwork") || t.includes("espoir"))
+    return 19;
+
+  if (t.includes("20") || t.includes("day off"))
+    return 20;
+
+  if (t.includes("21")) return 21;
+  if (t.includes("22")) return 22;
+  if (t.includes("23")) return 23;
+
+  return 99; // fallback sécurité
+}
 
 async function fetchResults() {
   try {
@@ -67,10 +95,8 @@ async function fetchResults() {
           processDraws(day.drawResults.nightDraws);
         }
 
-        const nomJour = day.date.split(" ")[0].toLowerCase();
-        const ordre = ordreParJour[nomJour] || [];
-
-        tirages.sort((a, b) => ordre.indexOf(a.tirage) - ordre.indexOf(b.tirage));
+        // 🔥 TRI ULTRA FIABLE PAR HEURE
+        tirages.sort((a, b) => getHeure(a.tirage) - getHeure(b.tirage));
 
         temp.push({
           date: fullDate,
