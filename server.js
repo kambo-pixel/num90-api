@@ -22,10 +22,95 @@ async function fetchResults() {
     }
 
     let results = [];
-
+function getJour(dateString) {
+  return dateString.split(" ")[0].toLowerCase();
+}
     data.drawsResultsWeekly.forEach(week => {
       week.drawResultsDaily.forEach(day => {
-
+const ordreParJour = {
+  "lundi": [
+    "Digital Reveil 7h",
+    "Digital Reveil 8h",
+    "Reveil",
+    "Etoile",
+    "Akwaba",
+    "Afterwork",
+    "Digital 21h",
+    "Digital 22h",
+    "Digital 23h"
+  ],
+  "mardi": [
+    "Digital Reveil 7h",
+    "Digital Reveil 8h",
+    "La Matinale",
+    "Emergence",
+    "Sika",
+    "Afterwork",
+    "Digital 21h",
+    "Digital 22h",
+    "Digital 23h"
+  ],
+  "mercredi": [
+    "Digital Reveil 7h",
+    "Digital Reveil 8h",
+    "Premiere Heure",
+    "Fortune",
+    "Baraka",
+    "Afterwork",
+    "Digital 21h",
+    "Digital 22h",
+    "Digital 23h"
+  ],
+  "jeudi": [
+    "Digital Reveil 7h",
+    "Digital Reveil 8h",
+    "Kado",
+    "Privilege",
+    "Monni",
+    "Afterwork",
+    "Digital 21h",
+    "Digital 22h",
+    "Digital 23h"
+  ],
+  "vendredi": [
+    "Digital Reveil 7h",
+    "Digital Reveil 8h",
+    "Cash",
+    "Solution",
+    "Wari",
+    "Afterwork",
+    "Day Off",
+    "Digital 21h",
+    "Digital 22h",
+    "Digital 23h"
+  ],
+  "samedi": [
+    "Special Weekend 1h",
+    "Special Weekend 3h",
+    "Digital Reveil 7h",
+    "Digital Reveil 8h",
+    "Soutra",
+    "Diamant",
+    "Moaye",
+    "Afterwork",
+    "Digital 21h",
+    "Digital 22h",
+    "Digital 23h"
+  ],
+  "dimanche": [
+    "Special Weekend 1h",
+    "Special Weekend 3h",
+    "Digital Reveil 7h",
+    "Digital Reveil 8h",
+    "Benediction",
+    "Prestige",
+    "Awale",
+    "Espoir",
+    "Digital 21h",
+    "Digital 22h",
+    "Digital 23h"
+  ]
+};
         const date = day.date;
 
         const processDraws = (draws) => {
@@ -81,4 +166,11 @@ app.get("/resultats", (req, res) => {
 
 app.listen(PORT, () => {
   console.log("🚀 Serveur lancé");
+});
+Object.keys(resultatsParJour).forEach(jour => {
+  const ordre = ordreParJour[jour] || [];
+
+  resultatsParJour[jour].sort((a, b) => {
+    return ordre.indexOf(a.tirage) - ordre.indexOf(b.tirage);
+  });
 });
