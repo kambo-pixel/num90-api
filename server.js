@@ -83,11 +83,20 @@ async function fetchResults() {
               draw.machineNumbers.includes(".")
             ) return;
 
-            temp[jour].push({
-              tirage: draw.drawName,
-              gagnants: draw.winningNumbers.split(" - "),
-              machine: draw.machineNumbers.split(" - ")
-            });
+const newItem = {
+  tirage: draw.drawName,
+  gagnants: draw.winningNumbers.split(" - "),
+  machine: draw.machineNumbers.split(" - ")
+};
+
+// 🔥 supprimer doublons (garder le dernier)
+const index = temp[jour].findIndex(t => t.tirage === draw.drawName);
+
+if (index !== -1) {
+  temp[jour][index] = newItem; // remplace ancien
+} else {
+  temp[jour].push(newItem); // ajoute si pas existant
+}
           });
         };
 
