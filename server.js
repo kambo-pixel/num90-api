@@ -1,3 +1,7 @@
+import cors from "cors";
+const app = express();
+app.use(cors());
+
 import express from "express";
 import axios from "axios";
 
