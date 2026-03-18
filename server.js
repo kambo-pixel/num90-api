@@ -1,71 +1,78 @@
 import express from "express";
+import axios from "axios";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// 🔥 COLLE ICI TON TEXTE COMPLET
-let rawText = `COLLE ICI TON TEXTE EXACT`;
+let journal = [];
 
-// 🔁 parser
-function parser() {
-  const lignes = rawText
-    .split("\n")
-    .map(l => l.trim())
-    .filter(l => l);
+// 🔥 API interne (à adapter si besoin)
+const URL = "https://lotobonheur.ci/api/draws"; // ⚠️ à ajuster si ton URL exacte est différente
 
-  let data = [];
-  let currentDate = "";
-  let currentTirage = null;
+function formatData(data) {
+  let result = [];
 
-  for (let i = 0; i < lignes.length; i++) {
+  data.drawsResultsWeekly.forEach(week => {
+    week.drawResultsDaily.forEach(day => {
 
-    let l = lignes[i];
+      const date = day.date;
 
-    // 📅 détecter date
-    if (l.match(/^(Lundi|Mardi|Mercredi|Jeudi|Vendredi|Samedi|Dimanche)/)) {
-      currentDate = l;
-    }
+      const allDraws = [
+        ...day.drawResults.nightDraws,
+        ...day.drawResults.standardDraws
+      ];
 
-    // 🎯 détecter tirage
-    else if (
-      l.length < 40 &&
-      !l.includes("Gagnants") &&
-      !l.includes("Machine") &&
-      isNaN(l)
-    ) {
-      currentTirage = {
-        date: currentDate,
-        tirage: l,
-        gagnants: [],
-        machine: []
-      };
-    }
+      allDraws.forEach(draw => {
 
-    // 🎯 gagnants
-    else if (l === "##### Gagnants :" || l === "Gagnants") {
-      currentTirage.gagnants = lignes.slice(i + 1, i + 6).map(Number);
-    }
+        if (
+          draw.drawName !== "-" &&
+          !draw.winningNumbers.includes(".")
+        ) {
+          result.push({
+            date,
+            tirage: draw.drawName,
+            gagnants: draw.winningNumbers.split(" - "),
+            machine: draw.machineNumbers.split(" - ")
+          });
+        }
 
-    // 🎯 machine
-    else if (l === "##### Machine :" || l === "Machine") {
-      currentTirage.machine = lignes.slice(i + 1, i + 6).map(Number);
+      });
 
-      if (currentTirage.gagnants.length === 5) {
-        data.push(currentTirage);
-      }
-    }
-  }
+    });
+  });
 
-  return data;
+  return result;
 }
 
-// ROUTES
+// 🔁 récupération automatique
+async function fetchData() {
+  try {
+
+    const res = await axios.get(URL);
+
+    if (res.data && res.data.success) {
+      journal = formatData(res.data);
+      console.log("✅ Données récupérées :", journal.length);
+    } else {
+      console.log("❌ Mauvaise réponse API");
+    }
+
+  } catch (err) {
+    console.log("❌ Erreur API :", err.message);
+  }
+}
+
+// 🔁 toutes les 5 minutes
+fetchData();
+setInterval(fetchData, 300000);
+
+// 🌐 routes
 app.get("/", (req, res) => {
-  res.json({ status: "OK" });
+  res.json({ status: "API active" });
 });
 
 app.get("/resultats", (req, res) => {
-  res.json(parser());
+  res.json(journal);
 });
 
 app.listen(PORT, () => {
