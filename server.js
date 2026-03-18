@@ -31,9 +31,12 @@ async function fetchResults() {
         const processDraws = (draws) => {
           draws.forEach(draw => {
 
-            if (draw.drawName === "-" ) return;
-            if (draw.winningNumbers.includes(".")) return;
+            if (!draw.winningNumbers || !draw.machineNumbers) return;
 
+if (
+  draw.winningNumbers.includes(".") ||
+  draw.machineNumbers.includes(".")
+) return;
             results.push({
               date: date,
               tirage: draw.drawName,
