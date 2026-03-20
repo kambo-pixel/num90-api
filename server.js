@@ -17,6 +17,60 @@ function normalize(text) {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
+const horaires = {
+
+  // 🔥 COMMUN
+  "Digital Reveil 7h": "7h",
+  "Digital Reveil 8h": "8h",
+
+  // LUNDI
+  "Reveil": "10h",
+  "Etoile": "13h",
+  "Akwaba": "16h",
+  "Afterwork": "19h",
+
+  // MARDI
+  "Le matinal": "10h",
+  "Emergence": "13h",
+  "Sika": "16h",
+
+  // MERCREDI
+  "Premiere Heure": "10h",
+  "Fortune": "13h",
+  "Baraka": "16h",
+
+  // JEUDI
+  "Kado": "10h",
+  "Privilege": "13h",
+  "Monni": "16h",
+
+  // VENDREDI
+  "Cash": "10h",
+  "Solution": "13h",
+  "Wari": "16h",
+  "Day off": "20h",
+
+  // SAMEDI
+  "Special Weekend 1h": "1h",
+  "Special Weekend 3h": "3h",
+  "Soutra": "10h",
+  "Diamant": "13h",
+  "Moaye": "16h",
+
+  // DIMANCHE
+  "Benediction": "10h",
+  "Prestige": "13h",
+  "Awale": "16h",
+  "Espoir": "19h",
+
+  // DIGITAL SOIR
+  "Digital 21h": "21h",
+  "Digital 22h": "22h",
+  "Digital 23h": "23h"
+
+};
+
+
 // 🔥 EXTRAIRE HEURE INTELLIGEMMENT
 function getHeure(tirage) {
   const t = normalize(tirage);
