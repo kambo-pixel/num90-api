@@ -67,9 +67,66 @@ const horaires = {
   "Digital 21h": "21h",
   "Digital 22h": "22h",
   "Digital 23h": "23h"
+  },
+  
+  lundi: {
+    "Reveil": "10h",
+    "Etoile": "13h",
+    "Akwaba": "16h",
+    "Afterwork": "19h"
+  },
 
+  mardi: {
+    "Le Matinal": "10h",
+    "Emergence": "13h",
+    "Sika": "16h",
+    "Afterwork": "19h"
+  },
+
+  mercredi: {
+    "Premiere Heure": "10h",
+    "Fortune": "13h",
+    "Baraka": "16h",
+    "Afterwork": "19h"
+  },
+
+  jeudi: {
+    "Kado": "10h",
+    "Privilege": "13h",
+    "Monni": "16h",
+    "Afterwork": "19h"
+  },
+
+  vendredi: {
+    "Cash": "10h",
+    "Solution": "13h",
+    "Wari": "16h",
+    "Afterwork": "19h",
+    "Day Off": "20h"
+  },
+
+  samedi: {
+    "Soutra": "10h",
+    "Diamant": "13h",
+    "Moaye": "16h",
+    "Afterwork": "19h"
+  },
+
+  dimanche: {
+    "Benediction": "10h",
+    "Prestige": "13h",
+    "Awale": "16h",
+    "Espoir": "19h"
+  }
 };
 
+if(t.tirage.includes("Digital") && !t.tirage.match(/\dh/)){
+  // rien à faire si déjà ok
+}
+
+if(t.tirage.includes("Special") && !t.tirage.match(/\dh/)){
+  // pareil
+}
 
 // 🔥 EXTRAIRE HEURE INTELLIGEMMENT
 function getHeure(tirage) {
