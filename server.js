@@ -9,7 +9,9 @@ const PORT = process.env.PORT || 3000;
 
 let journal = [];
 
-// 🔥 NORMALISER TEXTE (enlever accents + minuscule)
+/* =========================================
+   🔥 NORMALISER TEXTE (minuscule + sans accents)
+========================================= */
 function normalize(text) {
   return text
     .toLowerCase()
@@ -17,179 +19,96 @@ function normalize(text) {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
-const horaires = {
+/* =========================================
+   🔥 TABLE DE CORRESPONDANCE NOM → HEURE
+========================================= */
+const HEURES_MAP = {
+  // matin
+  "reveil": "10h",
+  "le matinal": "10h",
+  "premiere heure": "10h",
+  "kado": "10h",
+  "cash": "10h",
+  "soutra": "10h",
+  "benediction": "10h",
 
-  // 🔥 COMMUN
-  "Digital Reveil 7h": "7h",
-  "Digital Reveil 8h": "8h",
+  // midi
+  "etoile": "13h",
+  "emergence": "13h",
+  "fortune": "13h",
+  "privilege": "13h",
+  "solution": "13h",
+  "diamant": "13h",
+  "prestige": "13h",
 
-  // LUNDI
-  "Reveil": "10h",
-  "Etoile": "13h",
-  "Akwaba": "16h",
-  "Afterwork": "19h",
+  // apres-midi
+  "akwaba": "16h",
+  "sika": "16h",
+  "baraka": "16h",
+  "monni": "16h",
+  "wari": "16h",
+  "moaye": "16h",
+  "awale": "16h",
 
-  // MARDI
-  "Le matinal": "10h",
-  "Emergence": "13h",
-  "Sika": "16h",
+  // soir
+  "afterwork": "19h",
+  "espoir": "19h",
 
-  // MERCREDI
-  "Premiere Heure": "10h",
-  "Fortune": "13h",
-  "Baraka": "16h",
+  // special
+  "day off": "20h",
 
-  // JEUDI
-  "Kado": "10h",
-  "Privilege": "13h",
-  "Monni": "16h",
+  // digital
+  "digital reveil 7h": "7h",
+  "digital reveil 8h": "8h",
+  "digital 21h": "21h",
+  "digital 22h": "22h",
+  "digital 23h": "23h",
 
-  // VENDREDI
-  "Cash": "10h",
-  "Solution": "13h",
-  "Wari": "16h",
-  "Day off": "20h",
-
-  // SAMEDI
-  "Special Weekend 1h": "1h",
-  "Special Weekend 3h": "3h",
-  "Soutra": "10h",
-  "Diamant": "13h",
-  "Moaye": "16h",
-
-  // DIMANCHE
-  "Benediction": "10h",
-  "Prestige": "13h",
-  "Awale": "16h",
-  "Espoir": "19h",
-
-  // DIGITAL SOIR
-  "Digital 21h": "21h",
-  "Digital 22h": "22h",
-  "Digital 23h": "23h"
-  },
-  
-  lundi: {
-    "Reveil": "10h",
-    "Etoile": "13h",
-    "Akwaba": "16h",
-    "Afterwork": "19h"
-  },
-
-  mardi: {
-    "Le Matinal": "10h",
-    "Emergence": "13h",
-    "Sika": "16h",
-    "Afterwork": "19h"
-  },
-
-  mercredi: {
-    "Premiere Heure": "10h",
-    "Fortune": "13h",
-    "Baraka": "16h",
-    "Afterwork": "19h"
-  },
-
-  jeudi: {
-    "Kado": "10h",
-    "Privilege": "13h",
-    "Monni": "16h",
-    "Afterwork": "19h"
-  },
-
-  vendredi: {
-    "Cash": "10h",
-    "Solution": "13h",
-    "Wari": "16h",
-    "Afterwork": "19h",
-    "Day Off": "20h"
-  },
-
-  samedi: {
-    "Soutra": "10h",
-    "Diamant": "13h",
-    "Moaye": "16h",
-    "Afterwork": "19h"
-  },
-
-  dimanche: {
-    "Benediction": "10h",
-    "Prestige": "13h",
-    "Awale": "16h",
-    "Espoir": "19h"
-  }
+  // week-end
+  "special weekend 1h": "1h",
+  "special weekend 3h": "3h"
 };
 
-if(t.tirage.includes("Digital") && !t.tirage.match(/\dh/)){
-  // rien à faire si déjà ok
-}
-
-if(t.tirage.includes("Special") && !t.tirage.match(/\dh/)){
-  // pareil
-}
-
-// 🔥 EXTRAIRE HEURE INTELLIGEMMENT
+/* =========================================
+   🔥 EXTRAIRE HEURE
+========================================= */
 function getHeure(tirage) {
   const t = normalize(tirage);
 
-  const map = {
-    // week-end
-    "special weekend 1h": 1,
-    "special weekend 3h": 3,
-
-    // matin
-    "digital reveil 7h": 7,
-    "digital reveil 8h": 8,
-
-    // 10h
-    "reveil": 10,
-    "matinale": 10,
-    "premiere heure": 10,
-    "kado": 10,
-    "cash": 10,
-    "soutra": 10,
-    "benediction": 10,
-
-    // 13h
-    "etoile": 13,
-    "emergence": 13,
-    "fortune": 13,
-    "privilege": 13,
-    "solution": 13,
-    "diamant": 13,
-    "prestige": 13,
-
-    // 16h
-    "akwaba": 16,
-    "sika": 16,
-    "baraka": 16,
-    "monni": 16,
-    "wari": 16,
-    "moaye": 16,
-    "awale": 16,
-
-    // 19h
-    "afterwork": 19,
-    "espoir": 19,
-
-    // 20h
-    "day off": 20,
-
-    // nuit
-    "digital 21h": 21,
-    "digital 22h": 22,
-    "digital 23h": 23
-  };
-
-  for (let key in map) {
+  for (let key in HEURES_MAP) {
     if (t.includes(key)) {
-      return map[key];
+      return HEURES_MAP[key];
     }
   }
 
-  return 99;
+  return null;
 }
 
+/* =========================================
+   🔥 AJOUTER HEURE AU NOM SI MANQUANT
+========================================= */
+function enrichirNom(tirage) {
+  // si déjà une heure → ne rien faire
+  if (/\d+h/.test(tirage)) return tirage;
+
+  const heure = getHeure(tirage);
+
+  if (!heure) return tirage;
+
+  return tirage + " " + heure;
+}
+
+/* =========================================
+   🔥 CONVERTIR HEURE POUR TRI
+========================================= */
+function heureToNumber(tirage) {
+  const match = tirage.match(/(\d+)h/);
+  return match ? parseInt(match[1]) : 99;
+}
+
+/* =========================================
+   🔥 RECUPERATION API
+========================================= */
 async function fetchResults() {
   try {
     console.log("⏳ Récupération API...");
@@ -208,7 +127,6 @@ async function fetchResults() {
       week.drawResultsDaily.forEach(day => {
 
         const fullDate = day.date + "/2026";
-
         let tirages = [];
 
         const processDraws = (draws) => {
@@ -221,8 +139,10 @@ async function fetchResults() {
               draw.machineNumbers.includes(".")
             ) return;
 
+            let nom = enrichirNom(draw.drawName);
+
             tirages.push({
-              tirage: draw.drawName,
+              tirage: nom,
               gagnants: draw.winningNumbers.split(" - "),
               machine: draw.machineNumbers.split(" - ")
             });
@@ -237,8 +157,8 @@ async function fetchResults() {
           processDraws(day.drawResults.nightDraws);
         }
 
-        // 🔥 TRI ULTRA FIABLE PAR HEURE
-        tirages.sort((a, b) => getHeure(a.tirage) - getHeure(b.tirage));
+        // 🔥 TRI FINAL PAR HEURE
+        tirages.sort((a, b) => heureToNumber(a.tirage) - heureToNumber(b.tirage));
 
         temp.push({
           date: fullDate,
@@ -257,11 +177,15 @@ async function fetchResults() {
   }
 }
 
-// 🔁 AUTO REFRESH
+/* =========================================
+   🔁 AUTO REFRESH
+========================================= */
 fetchResults();
 setInterval(fetchResults, 300000);
 
-// ROUTES
+/* =========================================
+   🌐 ROUTES
+========================================= */
 app.get("/", (req, res) => {
   res.json({ status: "API active" });
 });
@@ -270,6 +194,9 @@ app.get("/resultats", (req, res) => {
   res.json(journal);
 });
 
+/* =========================================
+   🚀 LANCEMENT SERVEUR
+========================================= */
 app.listen(PORT, () => {
   console.log("🚀 Serveur lancé sur " + PORT);
 });
