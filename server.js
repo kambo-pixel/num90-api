@@ -25,7 +25,7 @@ function normalize(text) {
 const HEURES_MAP = {
   // matin
   "reveil": "10h",
-  "le matinal": "10h",
+  "la matinale": "10h",
   "premiere heure": "10h",
   "kado": "10h",
   "cash": "10h",
